@@ -235,12 +235,13 @@ EOF</div>
         <p style="color:#aaa;font-size:13px;margin-bottom:12px">This runs the math evaluator locally AND registers your dataset + API key with Fireworks:</p>
         <div class="cmd-block">
           <div class="cmd-top"><span class="cmd-label">Terminal</span><button class="copy-btn" onclick="cp(this)">Copy</button></div>
-          <div class="cmd-code">eval-protocol test</div>
+          <div class="cmd-code">eval-protocol local-test</div>
         </div>
         <p style="color:#aaa;font-size:13px;margin:12px 0 8px">You'll be prompted twice:</p>
         <div class="check-item" onclick="tick(this)"><input type="checkbox"><label><strong>Select this test?</strong> → Type <code>Y</code>, press Enter</label></div>
         <div class="check-item" onclick="tick(this)"><input type="checkbox"><label><strong>Select secrets to upload</strong> → API key pre-selected, press Enter</label></div>
-        <div class="note note-ok"><div class="note-head">✅ Success</div><p>"1 passed" + "Created and uploaded dataset: evaluation-gsm8k-example-dataset-..."</p></div>
+         <div class="note note-err"><div class="note-head">Payment required?</div><p>Go to <a href="https://app.fireworks.ai/settings/billing" target="_blank">fireworks.ai/settings/billing</a>, add a card, then re-run this command. Free jobs still need a card on file.</p></div>
+       <div class="note note-ok"><div class="note-head">✅ Success</div><p>"1 passed" + "Created and uploaded dataset: evaluation-gsm8k-example-dataset-..."</p></div>
       </div>
 
       <!-- S8 -->
@@ -251,7 +252,7 @@ EOF</div>
           <div class="cmd-code">eval-protocol create rft --base-model accounts/fireworks/models/qwen3-0p6b --epochs 3</div>
         </div>
         <div class="note note-err"><div class="note-head">⚠️ Model not found?</div><p>Check the model ID carefully: <code>qwen3-0p6b</code> — that's "zero P six B" with a <strong>p</strong> for the decimal point, not "0b6".</p></div>
-        <div class="note note-err"><div class="note-head">Payment required?</div><p>Go to <a href="https://app.fireworks.ai/settings/billing" target="_blank">fireworks.ai/settings/billing</a>, add a card, then re-run this command. Free jobs still need a card on file.</p></div>
+      
         <div class="note note-ok"><div class="note-head">✅ Success</div><p>"✅ Created Reinforcement Fine-tuning Job" with a dashboard link printed below it.</p></div>
       </div>
 
@@ -390,7 +391,7 @@ EOF</div>
       <!-- R7 -->
       <div class="step-content" id="right-7">
         <div class="explain-section">
-          <h4>🧪 What does eval-protocol test actually do?</h4>
+          <h4>🧪 What does eval-protocol local-test actually do?</h4>
           <p>It runs the math evaluator against a few sample problems using your current model (or a test model). This verifies your evaluator logic works before spending compute on training.</p>
         </div>
         <div class="explain-section">
