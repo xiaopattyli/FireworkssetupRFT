@@ -267,7 +267,7 @@ async function sendMessage() {
         model: model,
         max_tokens: 2048,
         messages: [
-          { role: 'system', content: 'You are a math tutor. Work through problems step by step, then give the final answer clearly. Do not use markdown formatting or asterisks.' },
+          { role: 'system', content: 'You are a math tutor. Solve the problem step by step in plain text. At the very end, write exactly: Final Answer: [number]. Never use asterisks, bullet points, bold, or any markdown formatting.' },
           ...messages
         ]
       })
