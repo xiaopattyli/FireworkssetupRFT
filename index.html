@@ -1,0 +1,550 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Fireworks RFT — Interactive Guide</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #0c0c12; color: #e0e0f0; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
+
+  /* TOP BAR */
+  .topbar { background: #111118; border-bottom: 1px solid #222230; padding: 0 24px; height: 56px; display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; }
+  .topbar-left { display: flex; align-items: center; gap: 12px; }
+  .logo { font-size: 20px; }
+  .topbar h1 { font-size: 15px; font-weight: 700; color: white; }
+  .topbar-badge { font-size: 11px; background: #1e1e30; border: 1px solid #333350; color: #a78bfa; padding: 3px 10px; border-radius: 20px; }
+  .progress-wrap { display: flex; align-items: center; gap: 10px; }
+  .progress-track { width: 160px; height: 4px; background: #222230; border-radius: 2px; }
+  .progress-fill { height: 4px; border-radius: 2px; background: linear-gradient(90deg, #ff6b35, #ff3d7f); transition: width 0.4s ease; }
+  .progress-text { font-size: 12px; color: #666; }
+
+  /* STEP TABS */
+  .tabs { background: #111118; border-bottom: 1px solid #222230; padding: 0 24px; display: flex; gap: 2px; overflow-x: auto; flex-shrink: 0; }
+  .tab { padding: 10px 16px; font-size: 12px; font-weight: 600; cursor: pointer; border-bottom: 2px solid transparent; color: #555; white-space: nowrap; transition: all 0.2s; display: flex; align-items: center; gap: 6px; }
+  .tab:hover { color: #aaa; }
+  .tab.active { color: #ff6b35; border-bottom-color: #ff6b35; }
+  .tab.done { color: #4ade80; }
+  .tab .tab-num { width: 18px; height: 18px; border-radius: 50%; background: #1e1e2e; font-size: 10px; display: flex; align-items: center; justify-content: center; }
+  .tab.done .tab-num { background: #1a3a1a; color: #4ade80; }
+  .tab.active .tab-num { background: #ff6b35; color: white; }
+
+  /* SPLIT LAYOUT */
+  .split { display: flex; flex: 1; overflow: hidden; }
+
+  /* LEFT — COMMANDS */
+  .left { width: 52%; border-right: 1px solid #222230; display: flex; flex-direction: column; overflow: hidden; }
+  .left-header { padding: 16px 24px; border-bottom: 1px solid #1a1a28; background: #0f0f1a; flex-shrink: 0; }
+  .left-header h2 { font-size: 18px; font-weight: 700; color: white; margin-bottom: 4px; }
+  .left-header p { font-size: 13px; color: #777; }
+  .left-body { flex: 1; overflow-y: auto; padding: 20px 24px; }
+
+  /* RIGHT — EXPLAINER */
+  .right { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+  .right-header { padding: 16px 24px; border-bottom: 1px solid #1a1a28; background: #0a0a14; flex-shrink: 0; display: flex; align-items: center; gap: 8px; }
+  .right-header .icon { font-size: 18px; }
+  .right-header h3 { font-size: 14px; font-weight: 600; color: #a78bfa; }
+  .right-body { flex: 1; overflow-y: auto; padding: 20px 24px; background: #0a0a14; }
+
+  /* BOTTOM NAV */
+  .bottom-nav { background: #111118; border-top: 1px solid #222230; padding: 12px 24px; display: flex; justify-content: space-between; align-items: center; flex-shrink: 0; }
+  .btn { padding: 9px 22px; border-radius: 8px; border: none; font-size: 13px; font-weight: 600; cursor: pointer; transition: all 0.2s; }
+  .btn-prev { background: #1e1e2e; color: #888; }
+  .btn-prev:hover:not(:disabled) { background: #2a2a3e; color: white; }
+  .btn-next { background: linear-gradient(135deg, #ff6b35, #ff3d7f); color: white; }
+  .btn-next:hover { opacity: 0.9; }
+  .btn:disabled { opacity: 0.3; cursor: not-allowed; }
+  .nav-center { font-size: 12px; color: #555; }
+
+  /* CONTENT ELEMENTS */
+  .cmd-block { background: #070710; border: 1px solid #1e1e2e; border-radius: 8px; overflow: hidden; margin: 12px 0; }
+  .cmd-top { background: #111118; padding: 8px 14px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #1e1e2e; }
+  .cmd-label { font-size: 10px; color: #555; text-transform: uppercase; letter-spacing: 1px; }
+  .copy-btn { background: #1e1e2e; border: none; color: #888; padding: 3px 10px; border-radius: 5px; font-size: 11px; cursor: pointer; transition: all 0.15s; }
+  .copy-btn:hover { background: #ff6b35; color: white; }
+  .copy-btn.copied { background: #4ade80; color: #050510; }
+  .cmd-code { padding: 14px; font-family: 'SF Mono', 'Fira Code', monospace; font-size: 12px; color: #7dd3fc; line-height: 1.7; white-space: pre-wrap; }
+
+  .note { border-radius: 6px; padding: 10px 14px; margin: 10px 0; font-size: 13px; }
+  .note-tip { background: #12120a; border-left: 3px solid #fbbf24; }
+  .note-tip .note-head { color: #fbbf24; font-size: 10px; text-transform: uppercase; letter-spacing: 1px; font-weight: 700; margin-bottom: 4px; }
+  .note-err { background: #120808; border-left: 3px solid #f87171; }
+  .note-err .note-head { color: #f87171; font-size: 10px; text-transform: uppercase; letter-spacing: 1px; font-weight: 700; margin-bottom: 4px; }
+  .note-ok { background: #081208; border-left: 3px solid #4ade80; }
+  .note-ok .note-head { color: #4ade80; font-size: 10px; text-transform: uppercase; letter-spacing: 1px; font-weight: 700; margin-bottom: 4px; }
+  .note p { color: #aaa; line-height: 1.5; }
+
+  .check-item { display: flex; align-items: flex-start; gap: 10px; padding: 10px 12px; background: #111118; border-radius: 6px; margin: 6px 0; cursor: pointer; border: 1px solid #1e1e2e; transition: border-color 0.2s; }
+  .check-item:hover { border-color: #4ade80; }
+  .check-item input { margin-top: 2px; accent-color: #4ade80; flex-shrink: 0; }
+  .check-item label { font-size: 13px; color: #bbb; cursor: pointer; line-height: 1.4; }
+  .check-item.ticked label { color: #4ade80; text-decoration: line-through; opacity: 0.6; }
+
+  /* RIGHT SIDE CONTENT */
+  .explain-section { margin-bottom: 20px; }
+  .explain-section h4 { font-size: 13px; font-weight: 700; color: #e0e0f0; margin-bottom: 8px; display: flex; align-items: center; gap: 6px; }
+  .explain-section p { font-size: 13px; color: #888; line-height: 1.7; margin-bottom: 8px; }
+  .explain-section strong { color: #ccc; }
+  .pill { display: inline-block; background: #1a1a2e; border: 1px solid #2a2a4e; color: #a78bfa; font-size: 11px; padding: 2px 8px; border-radius: 12px; margin: 2px; }
+  .concept-box { background: #0f0f1e; border: 1px solid #1e1e3e; border-radius: 8px; padding: 14px; margin: 10px 0; }
+  .concept-box h5 { font-size: 12px; color: #a78bfa; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; }
+  .concept-box p { font-size: 13px; color: #888; line-height: 1.6; }
+  .analogy { background: #0a100a; border: 1px solid #1a2e1a; border-radius: 8px; padding: 14px; margin: 10px 0; }
+  .analogy-head { font-size: 11px; color: #4ade80; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 6px; font-weight: 700; }
+  .analogy p { font-size: 13px; color: #888; line-height: 1.6; }
+
+  /* step visibility */
+  .step-content { display: none; }
+  .step-content.visible { display: block; }
+
+  /* finish */
+  .finish { text-align: center; padding: 32px 0; }
+  .finish .trophy { font-size: 56px; }
+  .finish h2 { font-size: 22px; font-weight: 800; color: white; margin: 12px 0 8px; }
+  .finish p { font-size: 14px; color: #777; margin-bottom: 20px; }
+  .dash-link { display: inline-block; background: linear-gradient(135deg, #ff6b35, #ff3d7f); color: white; padding: 12px 28px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 14px; }
+
+  a { color: #ff6b35; }
+  code { background: #1a1a2e; padding: 1px 6px; border-radius: 4px; font-family: 'SF Mono', monospace; font-size: 12px; color: #7dd3fc; }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-left">
+    <span class="logo">🔥</span>
+    <h1>Fireworks RFT Guide</h1>
+    <span class="topbar-badge">Qwen3-0.6B · GSM8K Math</span>
+  </div>
+  <div class="progress-wrap">
+    <div class="progress-track"><div class="progress-fill" id="pFill" style="width:10%"></div></div>
+    <span class="progress-text" id="pText">1 / 10</span>
+  </div>
+</div>
+
+<div class="tabs" id="tabBar"></div>
+
+<div class="split">
+
+  <!-- LEFT PANEL -->
+  <div class="left">
+    <div class="left-header">
+      <h2 id="leftTitle">Open Terminal</h2>
+      <p id="leftSub">Your Mac's command line interface</p>
+    </div>
+    <div class="left-body" id="leftBody">
+
+      <!-- S1 -->
+      <div class="step-content visible" id="left-1">
+        <p style="color:#aaa;font-size:13px;margin-bottom:16px">Everything in this guide runs in Terminal. You'll copy-paste every command — no typing required.</p>
+        <div class="note note-tip"><div class="note-head">💡 How to open Terminal</div><p>Press <strong>Cmd + Space</strong>, type "Terminal", hit Enter. Or go to Applications → Utilities → Terminal.</p></div>
+        <div class="check-item" onclick="tick(this)"><input type="checkbox"><label>Terminal is open and I can see the command prompt</label></div>
+      </div>
+
+      <!-- S2 -->
+      <div class="step-content" id="left-2">
+        <p style="color:#aaa;font-size:13px;margin-bottom:12px">Paste this into Terminal and hit Enter. You'll be asked for your Mac password.</p>
+        <div class="cmd-block">
+          <div class="cmd-top"><span class="cmd-label">Terminal</span><button class="copy-btn" onclick="cp(this)">Copy</button></div>
+          <div class="cmd-code">/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"</div>
+        </div>
+        <div class="note note-ok"><div class="note-head">✅ Success</div><p>You'll see <strong>"Installation successful!"</strong> when done. Takes 2–3 minutes.</p></div>
+        <div class="note note-err"><div class="note-head">Already installed?</div><p>Skip to the next step.</p></div>
+      </div>
+
+      <!-- S3 -->
+      <div class="step-content" id="left-3">
+        <p style="color:#aaa;font-size:13px;margin-bottom:12px">After Homebrew installs, run these 3 commands to make it accessible in your terminal:</p>
+        <div class="cmd-block">
+          <div class="cmd-top"><span class="cmd-label">Terminal — all three</span><button class="copy-btn" onclick="cp(this)">Copy</button></div>
+          <div class="cmd-code">echo >> /Users/$(whoami)/.zprofile
+echo 'eval "$(/opt/homebrew/bin/brew shellenv zsh)"' >> /Users/$(whoami)/.zprofile
+eval "$(/opt/homebrew/bin/brew shellenv zsh)"</div>
+        </div>
+      </div>
+
+      <!-- S4 -->
+      <div class="step-content" id="left-4">
+        <p style="color:#aaa;font-size:13px;margin-bottom:12px">Your Mac's built-in Python 3.9 is too old. Install Python 3.11 via Homebrew:</p>
+        <div class="cmd-block">
+          <div class="cmd-top"><span class="cmd-label">Terminal</span><button class="copy-btn" onclick="cp(this)">Copy</button></div>
+          <div class="cmd-code">brew install python@3.11</div>
+        </div>
+        <div class="note note-tip"><div class="note-head">⏱️ Takes ~2 minutes</div><p>You'll see a progress bar as it downloads.</p></div>
+      </div>
+
+      <!-- S5 -->
+      <div class="step-content" id="left-5">
+        <p style="color:#aaa;font-size:13px;margin-bottom:12px">Install the CLI tool, clone the math dataset repo, and write your API key. Replace the key below with yours from <a href="https://fireworks.ai/account/api-keys" target="_blank">fireworks.ai/account/api-keys</a>:</p>
+        <div class="cmd-block">
+          <div class="cmd-top"><span class="cmd-label">Terminal</span><button class="copy-btn" onclick="cp(this)">Copy</button></div>
+          <div class="cmd-code">pip3.11 install eval-protocol
+git clone https://github.com/eval-protocol/quickstart-gsm8k.git
+cd quickstart-gsm8k
+pip3.11 install -r requirements.txt
+echo "FIREWORKS_API_KEY=fw_YOUR_KEY_HERE" > .env</div>
+        </div>
+        <div class="note note-err"><div class="note-head">⚠️ pip not found?</div><p>Always use <code>pip3.11</code> (not <code>pip</code> or <code>pip3</code>) after installing Python via Homebrew.</p></div>
+      </div>
+
+      <!-- S6 -->
+      <div class="step-content" id="left-6">
+        <p style="color:#aaa;font-size:13px;margin-bottom:12px">The current version of eval-protocol has a bug where two CLI flags share the same name. Paste this entire block to fix it:</p>
+        <div class="cmd-block">
+          <div class="cmd-top"><span class="cmd-label">Terminal — paste entire block</span><button class="copy-btn" onclick="cp(this)">Copy</button></div>
+          <div class="cmd-code">python3.11 - &lt;&lt;'EOF'
+import pathlib
+f = pathlib.Path("/opt/homebrew/lib/python3.11/site-packages/eval_protocol/cli_commands/utils.py")
+src = f.read_text()
+old = """    if unwrap_union(hint) is bool:
+        parser.add_argument(*flags, action="store_true", help=help_text)
+        return
+    parser.add_argument(
+        *flags,
+        type=argparse_type_from_hint(hint),
+        help=help_text,
+        metavar="",
+    )"""
+new = """    if unwrap_union(hint) is bool:
+        try:
+            parser.add_argument(*flags, action="store_true", help=help_text)
+        except Exception:
+            pass
+        return
+    try:
+        parser.add_argument(
+            *flags,
+            type=argparse_type_from_hint(hint),
+            help=help_text,
+            metavar="",
+        )
+    except Exception:
+        pass"""
+if old in src:
+    f.write_text(src.replace(old, new))
+    print("Patched successfully!")
+else:
+    print("Pattern not found - no change made")
+EOF</div>
+        </div>
+        <div class="note note-ok"><div class="note-head">✅ Expected</div><p>"Patched successfully!"</p></div>
+      </div>
+
+      <!-- S7 -->
+      <div class="step-content" id="left-7">
+        <p style="color:#aaa;font-size:13px;margin-bottom:12px">This runs the math evaluator locally AND registers your dataset + API key with Fireworks:</p>
+        <div class="cmd-block">
+          <div class="cmd-top"><span class="cmd-label">Terminal</span><button class="copy-btn" onclick="cp(this)">Copy</button></div>
+          <div class="cmd-code">eval-protocol test</div>
+        </div>
+        <p style="color:#aaa;font-size:13px;margin:12px 0 8px">You'll be prompted twice:</p>
+        <div class="check-item" onclick="tick(this)"><input type="checkbox"><label><strong>Select this test?</strong> → Type <code>Y</code>, press Enter</label></div>
+        <div class="check-item" onclick="tick(this)"><input type="checkbox"><label><strong>Select secrets to upload</strong> → API key pre-selected, press Enter</label></div>
+        <div class="note note-ok"><div class="note-head">✅ Success</div><p>"1 passed" + "Created and uploaded dataset: evaluation-gsm8k-example-dataset-..."</p></div>
+      </div>
+
+      <!-- S8 -->
+      <div class="step-content" id="left-8">
+        <p style="color:#aaa;font-size:13px;margin-bottom:12px">Submit the RFT training job to Fireworks cloud:</p>
+        <div class="cmd-block">
+          <div class="cmd-top"><span class="cmd-label">Terminal</span><button class="copy-btn" onclick="cp(this)">Copy</button></div>
+          <div class="cmd-code">eval-protocol create rft --base-model accounts/fireworks/models/qwen3-0p6b --epochs 3</div>
+        </div>
+        <div class="note note-err"><div class="note-head">⚠️ Model not found?</div><p>Check the model ID carefully: <code>qwen3-0p6b</code> — that's "zero P six B" with a <strong>p</strong> for the decimal point, not "0b6".</p></div>
+        <div class="note note-err"><div class="note-head">Payment required?</div><p>Go to <a href="https://app.fireworks.ai/settings/billing" target="_blank">fireworks.ai/settings/billing</a>, add a card, then re-run this command. Free jobs still need a card on file.</p></div>
+        <div class="note note-ok"><div class="note-head">✅ Success</div><p>"✅ Created Reinforcement Fine-tuning Job" with a dashboard link printed below it.</p></div>
+      </div>
+
+      <!-- S9 -->
+      <div class="step-content" id="left-9">
+        <p style="color:#aaa;font-size:13px;margin-bottom:12px">Open the dashboard link printed in your terminal. Check these things:</p>
+        <div class="check-item" onclick="tick(this)"><input type="checkbox"><label>State shows <strong>Running</strong></label></div>
+        <div class="check-item" onclick="tick(this)"><input type="checkbox"><label>Base Model shows <strong>qwen3-0p6b</strong></label></div>
+        <div class="check-item" onclick="tick(this)"><input type="checkbox"><label>Estimated Cost shows <strong>No charge</strong></label></div>
+        <div class="check-item" onclick="tick(this)"><input type="checkbox"><label>Epochs shows <strong>3</strong></label></div>
+        <div class="note note-tip"><div class="note-head">⏱️ First epoch can take 40+ minutes at 0%</div><p>This is normal — infrastructure is warming up. The dashboard doesn't auto-refresh, press F5 every 10–15 minutes.</p></div>
+      </div>
+
+      <!-- S10 -->
+      <div class="step-content" id="left-10">
+        <p style="color:#aaa;font-size:13px;margin-bottom:16px">Your model is now learning math through reinforcement learning. Here's how to read the results:</p>
+        <div class="check-item" onclick="tick(this)"><input type="checkbox"><label>Click <strong>Details</strong> tab to see per-chunk scores</label></div>
+        <div class="check-item" onclick="tick(this)"><input type="checkbox"><label>Check the <strong>score histogram</strong> — two tall bars (0s and 1s) is expected with binary RL</label></div>
+        <div class="check-item" onclick="tick(this)"><input type="checkbox"><label>Watch <strong>Average Score</strong> climb from ~0.4 toward 0.8+ over 3 epochs</label></div>
+        <div class="check-item" onclick="tick(this)"><input type="checkbox"><label>After training, click <strong>Deploy</strong> to use your fine-tuned model via API</label></div>
+        <div class="finish">
+          <div class="trophy">🎉</div>
+          <h2>Training complete!</h2>
+          <p>Qwen3-0.6B has learned math through RL on Fireworks.<br>Check your dashboard for final accuracy results.</p>
+          <a href="https://app.fireworks.ai/dashboard/fine-tuning" class="dash-link" target="_blank">Open Dashboard →</a>
+        </div>
+      </div>
+
+    </div><!-- leftBody -->
+  </div><!-- left -->
+
+  <!-- RIGHT PANEL -->
+  <div class="right">
+    <div class="right-header">
+      <span class="icon">💡</span>
+      <h3 id="rightTitle">Why & How It Works</h3>
+    </div>
+    <div class="right-body" id="rightBody">
+
+      <!-- R1 -->
+      <div class="step-content visible" id="right-1">
+        <div class="explain-section">
+          <h4>🗺️ What you're about to do</h4>
+          <p>You're going to use <strong>Reinforcement Fine-Tuning (RFT)</strong> to teach a small AI model to get better at math. By the end, Qwen3-0.6B will go from ~40% accuracy on grade-school math problems to 80%+ — all through trial, error, and reward signals.</p>
+        </div>
+        <div class="concept-box">
+          <h5>The pipeline in plain English</h5>
+          <p>1. The model reads a math problem and generates an answer<br>2. An evaluator checks if the answer is right (reward = 1) or wrong (reward = 0)<br>3. The model updates its weights to produce more rewarded answers<br>4. Repeat 1,000 problems × 3 epochs = a smarter model</p>
+        </div>
+        <div class="explain-section">
+          <h4>🧰 Tools you'll install</h4>
+          <p><span class="pill">Homebrew</span> Mac package manager<br><span class="pill">Python 3.11</span> Required runtime<br><span class="pill">eval-protocol</span> Fireworks' training CLI<br><span class="pill">GSM8K dataset</span> 1,000 grade-school math problems</p>
+        </div>
+      </div>
+
+      <!-- R2 -->
+      <div class="step-content" id="right-2">
+        <div class="explain-section">
+          <h4>🍺 What is Homebrew?</h4>
+          <p>Homebrew is a <strong>package manager</strong> — think of it like an App Store for developer tools, but run from the terminal. It handles downloading, installing, and updating software like Python, Git, and more.</p>
+        </div>
+        <div class="analogy">
+          <div class="analogy-head">🏪 Analogy</div>
+          <p>Without Homebrew, installing Python 3.11 would mean going to python.org, downloading an installer, clicking through a wizard, hoping it works. With Homebrew, it's one command: <code>brew install python@3.11</code>.</p>
+        </div>
+        <div class="explain-section">
+          <h4>Why does Mac need this?</h4>
+          <p>macOS ships with Python 3.9 (old and locked down by Apple) and no easy way to upgrade it. Homebrew gives you a separate, manageable Python installation that doesn't interfere with Apple's system Python.</p>
+        </div>
+      </div>
+
+      <!-- R3 -->
+      <div class="step-content" id="right-3">
+        <div class="explain-section">
+          <h4>🛤️ What is PATH?</h4>
+          <p>When you type a command in Terminal (like <code>brew</code>), your Mac doesn't search every folder — it only looks in specific folders listed in your <strong>PATH</strong>. Homebrew installs itself in <code>/opt/homebrew/bin</code> which isn't in PATH by default.</p>
+        </div>
+        <div class="analogy">
+          <div class="analogy-head">📬 Analogy</div>
+          <p>Imagine your terminal is a mail carrier that only delivers to streets on a specific map. Homebrew built a new street (<code>/opt/homebrew/bin</code>) but the mail carrier's map doesn't include it yet. These 3 commands update the map.</p>
+        </div>
+        <div class="explain-section">
+          <h4>What is .zprofile?</h4>
+          <p>It's a config file that runs automatically every time you open a new terminal window. By adding Homebrew there, you never have to think about this again — it'll always be available.</p>
+        </div>
+      </div>
+
+      <!-- R4 -->
+      <div class="step-content" id="right-4">
+        <div class="explain-section">
+          <h4>🐍 Why Python 3.11 specifically?</h4>
+          <p>The <code>eval-protocol</code> package requires Python <strong>3.10 or newer</strong>. Your Mac ships with 3.9, which is close but not enough. Python 3.11 is currently the most stable modern version.</p>
+        </div>
+        <div class="concept-box">
+          <h5>Python version landscape</h5>
+          <p>🔴 Python 3.9 — Mac system default, too old<br>🟡 Python 3.10 — minimum required<br>🟢 Python 3.11 — what we install, recommended<br>🟢 Python 3.12/3.13 — also fine if you have them</p>
+        </div>
+        <div class="explain-section">
+          <h4>Why pip3.11 instead of pip?</h4>
+          <p>Because you now have multiple Pythons. Using <code>pip3.11</code> ensures packages install into the right Python. Using just <code>pip</code> might accidentally use the old system Python and packages won't be found.</p>
+        </div>
+      </div>
+
+      <!-- R5 -->
+      <div class="step-content" id="right-5">
+        <div class="explain-section">
+          <h4>📦 What is eval-protocol?</h4>
+          <p><strong>eval-protocol</strong> is Fireworks' open-source CLI that bridges your local evaluator code with their cloud training infrastructure. It handles uploading your dataset, registering your scoring function, and submitting the RFT job.</p>
+        </div>
+        <div class="explain-section">
+          <h4>📚 What is the GSM8K dataset?</h4>
+          <p>GSM8K (Grade School Math 8K) is a benchmark of ~8,500 grade-school math word problems created by OpenAI. Each problem requires multi-step reasoning — not just arithmetic, but understanding what to calculate and in what order.</p>
+        </div>
+        <div class="analogy">
+          <div class="analogy-head">📝 Example problem</div>
+          <p>"Janet has 3 cats. She buys 4 more. Then gives 2 away. Her friend gives her 1 back. How many cats does Janet have?" → The model must track state across multiple steps to get 6.</p>
+        </div>
+      </div>
+
+      <!-- R6 -->
+      <div class="step-content" id="right-6">
+        <div class="explain-section">
+          <h4>🐛 Why does this bug exist?</h4>
+          <p>The eval-protocol CLI registers many commands, and two of them both tried to use <code>--credentials-secret</code> as a short flag. Python's argparse library (which handles CLI arguments) raises an error when two flags share the same name.</p>
+        </div>
+        <div class="concept-box">
+          <h5>What the patch does</h5>
+          <p>It wraps the <code>parser.add_argument()</code> calls in a <code>try/except</code>. When the second flag tries to register and finds a conflict, the exception is caught and silently skipped — the first registration wins, which is fine.</p>
+        </div>
+        <div class="explain-section">
+          <h4>Is this safe?</h4>
+          <p>Yes — we're only suppressing a duplicate <em>registration</em> error, not hiding actual runtime failures. The CLI still works correctly; we're just letting it load without crashing on startup.</p>
+        </div>
+      </div>
+
+      <!-- R7 -->
+      <div class="step-content" id="right-7">
+        <div class="explain-section">
+          <h4>🧪 What does eval-protocol test actually do?</h4>
+          <p>It runs the math evaluator against a few sample problems using your current model (or a test model). This verifies your evaluator logic works before spending compute on training.</p>
+        </div>
+        <div class="explain-section">
+          <h4>Why does it also upload things?</h4>
+          <p>Fireworks needs two things registered before it can train: your <strong>evaluator</strong> (the scoring function) and your <strong>dataset</strong> (the 1,000 problems). Running the test locally also handles this registration automatically — one command, two jobs done.</p>
+        </div>
+        <div class="concept-box">
+          <h5>What is a rollout?</h5>
+          <p>Each time the model answers a question during training, that's called a <strong>rollout</strong>. The 1,600 "Successful Rollouts" you see in the dashboard = 200 problems × 8 response candidates per problem.</p>
+        </div>
+      </div>
+
+      <!-- R8 -->
+      <div class="step-content" id="right-8">
+        <div class="explain-section">
+          <h4>🤖 What is RFT vs normal fine-tuning?</h4>
+          <p><strong>Supervised fine-tuning (SFT)</strong> — show the model correct answers and train it to copy them. Simple but requires lots of labeled examples.</p>
+          <p><strong>Reinforcement fine-tuning (RFT)</strong> — let the model generate its own answers, score them, reward the good ones. The model learns through trial and error, not imitation.</p>
+        </div>
+        <div class="concept-box">
+          <h5>The algorithm: GRPO</h5>
+          <p>Fireworks uses <strong>Group Relative Policy Optimization</strong>. For each question, it generates 8 answer candidates, scores all 8, then asks: "which answers were better than average?" Those get positive gradient, the rest get negative. No absolute reward needed — just relative comparison.</p>
+        </div>
+        <div class="explain-section">
+          <h4>Why binary rewards still work</h4>
+          <p>You might think RL needs a smooth reward spectrum (-1 to 1). But binary (0/1) is fine — it's just sparse. GRPO compensates by comparing 8 candidates against each other, so even "all wrong" gives signal: the least-wrong answer gets relative credit.</p>
+        </div>
+      </div>
+
+      <!-- R9 -->
+      <div class="step-content" id="right-9">
+        <div class="explain-section">
+          <h4>📊 Understanding the config</h4>
+        </div>
+        <div class="concept-box">
+          <h5>LoRA Rank: 8</h5>
+          <p>Instead of retraining the whole model, LoRA adds tiny "adapter" matrices (rank 8) alongside frozen original weights. If a weight matrix is 1024×1024 (1M params), LoRA only trains two matrices of size 1024×8 and 8×1024 = 16K params. 63x fewer updates, similar quality.</p>
+        </div>
+        <div class="concept-box">
+          <h5>Response Candidates: 8</h5>
+          <p>For each math problem, the model generates 8 different answers. All 8 get scored. GRPO compares them to each other to compute the gradient signal. More candidates = better signal but more compute.</p>
+        </div>
+        <div class="concept-box">
+          <h5>Temperature: 1.0</h5>
+          <p>Full randomness during candidate generation. You want diversity across the 8 candidates so the model explores different reasoning strategies. Low temperature would make all 8 nearly identical — useless for RL.</p>
+        </div>
+        <div class="concept-box">
+          <h5>Chunk Size: 200 rows</h5>
+          <p>The 1,000 problems are split into 5 chunks of 200. Each chunk trains sequentially. You can inspect scores per-chunk in the dashboard Details tab.</p>
+        </div>
+      </div>
+
+      <!-- R10 -->
+      <div class="step-content" id="right-10">
+        <div class="explain-section">
+          <h4>📈 Reading the score histogram</h4>
+          <p>You'll see two tall bars — one near 0.0 and one near 1.0. This "bimodal" distribution is <strong>completely normal</strong> for binary RL. The model either gets math problems right (1.0) or wrong (0.0) — no partial credit.</p>
+        </div>
+        <div class="explain-section">
+          <h4>What to watch for over epochs</h4>
+          <p>As training progresses, the <strong>right bar (1.0) should grow</strong> and the left bar (0.0) should shrink. The Average Score climbs from ~0.4 baseline to 0.75–0.85 after 3 epochs. That's your model learning math.</p>
+        </div>
+        <div class="concept-box">
+          <h5>What happens after training?</h5>
+          <p>Your fine-tuned model is saved as a Fireworks-hosted endpoint. Click <strong>Deploy</strong> in the dashboard to make it available via API — same OpenAI-compatible format you'd use to call any other model. You can then query it with math problems and compare accuracy to the base Qwen3-0.6B.</p>
+        </div>
+        <div class="analogy">
+          <div class="analogy-head">🎓 What you actually built</div>
+          <p>A specialist — a model that started as a generalist (knows language, facts, reasoning) and was RL-trained to excel specifically at grade-school math. Same principle companies like Vercel use to fine-tune models for code generation.</p>
+        </div>
+      </div>
+
+    </div><!-- rightBody -->
+  </div><!-- right -->
+
+</div><!-- split -->
+
+<div class="bottom-nav">
+  <button class="btn btn-prev" id="btnPrev" onclick="nav(-1)" disabled>← Back</button>
+  <span class="nav-center" id="navCenter">Step 1 of 10</span>
+  <button class="btn btn-next" id="btnNext" onclick="nav(1)">Next →</button>
+</div>
+
+<script>
+const STEPS = 10;
+let cur = 1;
+
+const titles = [
+  'Open Terminal', 'Install Homebrew', 'Add Homebrew to PATH',
+  'Install Python 3.11', 'Install eval-protocol & Clone Repo',
+  'Fix the argparse Bug', 'Run the Evaluator Test',
+  'Launch the RFT Job', 'Monitor Training Dashboard', 'Read Your Results'
+];
+const subs = [
+  "Your Mac's command line interface",
+  "Mac's package manager — needed for Python 3.11",
+  "Tell your terminal where to find Homebrew",
+  "eval-protocol requires Python 3.10+",
+  "Fireworks' CLI + the GSM8K math dataset",
+  "One-time patch for a known bug",
+  "Registers evaluator & dataset with Fireworks",
+  "Submit training to Fireworks cloud",
+  "Watch the job run on the Fireworks dashboard",
+  "Understand epochs, chunks, and reward curves"
+];
+
+function buildTabs() {
+  const bar = document.getElementById('tabBar');
+  bar.innerHTML = '';
+  for (let i = 1; i <= STEPS; i++) {
+    const t = document.createElement('div');
+    t.className = 'tab' + (i === cur ? ' active' : '') + (i < cur ? ' done' : '');
+    t.innerHTML = `<span class="tab-num">${i < cur ? '✓' : i}</span>${titles[i-1]}`;
+    t.onclick = () => goTo(i);
+    bar.appendChild(t);
+  }
+}
+
+function goTo(n) {
+  document.getElementById('left-' + cur).classList.remove('visible');
+  document.getElementById('right-' + cur).classList.remove('visible');
+  cur = n;
+  document.getElementById('left-' + cur).classList.add('visible');
+  document.getElementById('right-' + cur).classList.add('visible');
+  document.getElementById('leftTitle').textContent = titles[cur-1];
+  document.getElementById('leftSub').textContent = subs[cur-1];
+  document.getElementById('btnPrev').disabled = cur === 1;
+  document.getElementById('btnNext').disabled = cur === STEPS;
+  document.getElementById('btnNext').textContent = cur === STEPS ? '✓ Done' : 'Next →';
+  document.getElementById('navCenter').textContent = `Step ${cur} of ${STEPS}`;
+  document.getElementById('pFill').style.width = (cur / STEPS * 100) + '%';
+  document.getElementById('pText').textContent = `${cur} / ${STEPS}`;
+  document.getElementById('leftBody').scrollTop = 0;
+  document.getElementById('rightBody').scrollTop = 0;
+  buildTabs();
+}
+
+function nav(d) { if (cur + d >= 1 && cur + d <= STEPS) goTo(cur + d); }
+
+function cp(btn) {
+  const code = btn.closest('.cmd-block').querySelector('.cmd-code').textContent;
+  navigator.clipboard.writeText(code).then(() => {
+    btn.textContent = '✓ Copied'; btn.classList.add('copied');
+    setTimeout(() => { btn.textContent = 'Copy'; btn.classList.remove('copied'); }, 2000);
+  });
+}
+
+function tick(row) {
+  const cb = row.querySelector('input');
+  cb.checked = !cb.checked;
+  row.classList.toggle('ticked', cb.checked);
+}
+
+buildTabs();
+</script>
+</body>
+</html>

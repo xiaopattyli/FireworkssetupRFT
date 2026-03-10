@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Fireworks RFT Setup Wizard</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #0f0f13; color: #e8e8f0; min-height: 100vh; }
+
+  header { background: linear-gradient(135deg, #ff6b35 0%, #ff3d7f 100%); padding: 28px 40px; display: flex; align-items: center; gap: 16px; }
+  header h1 { font-size: 22px; font-weight: 700; color: white; }
+  header .badge { background: rgba(255,255,255,0.2); color: white; font-size: 12px; padding: 4px 10px; border-radius: 20px; }
+
+  .progress-bar-wrap { background: #1a1a24; padding: 16px 40px; border-bottom: 1px solid #2a2a3a; }
+  .progress-label { font-size: 12px; color: #888; margin-bottom: 8px; }
+  .progress-track { background: #2a2a3a; border-radius: 4px; height: 6px; }
+  .progress-fill { background: linear-gradient(90deg, #ff6b35, #ff3d7f); height: 6px; border-radius: 4px; transition: width 0.4s ease; }
+
+  .steps-nav { background: #1a1a24; padding: 16px 40px; display: flex; gap: 8px; flex-wrap: wrap; border-bottom: 1px solid #2a2a3a; }
+  .step-dot { width: 32px; height: 32px; border-radius: 50%; border: 2px solid #2a2a3a; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 600; cursor: pointer; transition: all 0.2s; color: #666; }
+  .step-dot.done { background: #1e3a1e; border-color: #4ade80; color: #4ade80; }
+  .step-dot.active { background: #ff6b35; border-color: #ff6b35; color: white; }
+  .step-dot:hover { border-color: #ff6b35; color: #ff6b35; }
+
+  .main { padding: 40px; max-width: 800px; margin: 0 auto; }
+
+  .step-card { display: none; animation: fadeIn 0.3s ease; }
+  .step-card.active { display: block; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+
+  .step-header { display: flex; align-items: flex-start; gap: 16px; margin-bottom: 24px; }
+  .step-number { background: linear-gradient(135deg, #ff6b35, #ff3d7f); color: white; width: 48px; height: 48px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 20px; font-weight: 800; flex-shrink: 0; }
+  .step-title { font-size: 24px; font-weight: 700; color: white; margin-bottom: 4px; }
+  .step-subtitle { font-size: 14px; color: #888; }
+
+  .step-body { margin-bottom: 32px; }
+  .step-body p { color: #bbb; line-height: 1.7; margin-bottom: 12px; }
+  .step-body strong { color: #e8e8f0; }
+
+  .cmd-block { background: #0a0a10; border: 1px solid #2a2a3a; border-radius: 10px; overflow: hidden; margin: 16px 0; }
+  .cmd-header { background: #14141e; padding: 10px 16px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #2a2a3a; }
+  .cmd-label { font-size: 11px; color: #666; text-transform: uppercase; letter-spacing: 1px; }
+  .copy-btn { background: #2a2a3a; border: none; color: #aaa; padding: 4px 12px; border-radius: 6px; font-size: 12px; cursor: pointer; transition: all 0.2s; }
+  .copy-btn:hover { background: #ff6b35; color: white; }
+  .copy-btn.copied { background: #4ade80; color: #0a0a10; }
+  .cmd-code { padding: 16px; font-family: 'SF Mono', 'Fira Code', monospace; font-size: 13px; color: #7dd3fc; white-space: pre-wrap; line-height: 1.6; }
+
+  .tip { background: #1a1a10; border: 1px solid #3a3a10; border-left: 3px solid #fbbf24; border-radius: 8px; padding: 12px 16px; margin: 16px 0; }
+  .tip-label { font-size: 11px; color: #fbbf24; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 6px; font-weight: 600; }
+  .tip p { color: #bbb; font-size: 14px; margin: 0; }
+
+  .error-fix { background: #1a0a0a; border: 1px solid #3a1a1a; border-left: 3px solid #f87171; border-radius: 8px; padding: 12px 16px; margin: 16px 0; }
+  .error-label { font-size: 11px; color: #f87171; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 6px; font-weight: 600; }
+  .error-fix p { color: #bbb; font-size: 14px; margin: 0; }
+
+  .success { background: #0a1a0a; border: 1px solid #1a3a1a; border-left: 3px solid #4ade80; border-radius: 8px; padding: 12px 16px; margin: 16px 0; }
+  .success-label { font-size: 11px; color: #4ade80; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 6px; font-weight: 600; }
+  .success p { color: #bbb; font-size: 14px; margin: 0; }
+
+  .checkbox-row { display: flex; align-items: center; gap: 12px; padding: 12px; background: #14141e; border-radius: 8px; margin: 8px 0; cursor: pointer; border: 1px solid #2a2a3a; transition: all 0.2s; }
+  .checkbox-row:hover { border-color: #4ade80; }
+  .checkbox-row input { width: 18px; height: 18px; cursor: pointer; accent-color: #4ade80; }
+  .checkbox-row label { cursor: pointer; color: #bbb; font-size: 14px; }
+  .checkbox-row.checked label { color: #4ade80; text-decoration: line-through; opacity: 0.7; }
+
+  .nav-footer { display: flex; justify-content: space-between; align-items: center; padding-top: 24px; border-top: 1px solid #2a2a3a; }
+  .btn { padding: 12px 28px; border-radius: 10px; border: none; font-size: 15px; font-weight: 600; cursor: pointer; transition: all 0.2s; }
+  .btn-prev { background: #2a2a3a; color: #aaa; }
+  .btn-prev:hover { background: #3a3a4a; color: white; }
+  .btn-next { background: linear-gradient(135deg, #ff6b35, #ff3d7f); color: white; }
+  .btn-next:hover { opacity: 0.9; transform: translateY(-1px); }
+  .btn:disabled { opacity: 0.3; cursor: not-allowed; transform: none; }
+  .step-counter { font-size: 13px; color: #666; }
+
+  .concept-pill { display: inline-block; background: #1e1e3a; border: 1px solid #3a3a6a; color: #a78bfa; font-size: 12px; padding: 3px 10px; border-radius: 20px; margin: 2px; }
+
+  .finish-screen { text-align: center; padding: 40px 0; }
+  .finish-screen .trophy { font-size: 64px; margin-bottom: 16px; }
+  .finish-screen h2 { font-size: 28px; font-weight: 800; color: white; margin-bottom: 8px; }
+  .finish-screen p { color: #888; font-size: 16px; }
+  .dashboard-link { display: inline-block; margin-top: 24px; background: linear-gradient(135deg, #ff6b35, #ff3d7f); color: white; padding: 14px 32px; border-radius: 10px; text-decoration: none; font-weight: 600; font-size: 16px; }
+</style>
+</head>
+<body>
+
+<header>
+  <div>
+    <h1>🔥 Fireworks AI — RFT Setup Wizard</h1>
+  </div>
+  <span class="badge">GSM8K Math · Qwen3-0.6B</span>
+</header>
+
+<div class="progress-bar-wrap">
+  <div class="progress-label" id="progressLabel">Step 1 of 10</div>
+  <div class="progress-track"><div class="progress-fill" id="progressFill" style="width:10%"></div></div>
+</div>
+
+<div class="steps-nav" id="stepsNav"></div>
+
+<div class="main">
+
+  <!-- STEP 1 -->
+  <div class="step-card active" id="step-1">
+    <div class="step-header">
+      <div class="step-number">1</div>
+      <div><div class="step-title">Open Terminal</div><div class="step-subtitle">Get your Mac's command line ready</div></div>
+    </div>
+    <div class="step-body">
+      <p>Everything in this guide happens in the <strong>Terminal</strong> — a text interface where you type commands. Don't worry, we'll give you every command to copy-paste.</p>
+      <p>To open Terminal on your Mac:</p>
+      <div class="checkbox-row" onclick="toggleCheck(this)"><input type="checkbox"><label>Press <strong>Cmd + Space</strong>, type "Terminal", hit Enter</label></div>
+      <div class="tip"><div class="tip-label">💡 Tip</div><p>Once Terminal is open, leave it open for the whole guide. All commands run in the same window.</p></div>
+    </div>
+  </div>
+
+  <!-- STEP 2 -->
+  <div class="step-card" id="step-2">
+    <div class="step-header">
+      <div class="step-number">2</div>
+      <div><div class="step-title">Install Homebrew</div><div class="step-subtitle">Mac's package manager — needed to get Python 3.11</div></div>
+    </div>
+    <div class="step-body">
+      <p>Homebrew lets you install developer tools on Mac easily. Paste this entire command and hit Enter. It will ask for your Mac password.</p>
+      <div class="cmd-block">
+        <div class="cmd-header"><span class="cmd-label">Terminal</span><button class="copy-btn" onclick="copyCmd(this)">Copy</button></div>
+        <div class="cmd-code">/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"</div>
+      </div>
+      <p>This takes 2–3 minutes. When it finishes you'll see <strong>"Installation successful!"</strong></p>
+      <div class="error-fix"><div class="error-label">🔧 Already installed?</div><p>If it says Homebrew is already installed, skip to the next step.</p></div>
+    </div>
+  </div>
+
+  <!-- STEP 3 -->
+  <div class="step-card" id="step-3">
+    <div class="step-header">
+      <div class="step-number">3</div>
+      <div><div class="step-title">Add Homebrew to PATH</div><div class="step-subtitle">Tell your terminal where to find Homebrew</div></div>
+    </div>
+    <div class="step-body">
+      <p>After installing, Homebrew asks you to run 3 commands to make it accessible. Run all three:</p>
+      <div class="cmd-block">
+        <div class="cmd-header"><span class="cmd-label">Terminal — run all three</span><button class="copy-btn" onclick="copyCmd(this)">Copy</button></div>
+        <div class="cmd-code">echo >> /Users/$(whoami)/.zprofile
+echo 'eval "$(/opt/homebrew/bin/brew shellenv zsh)"' >> /Users/$(whoami)/.zprofile
+eval "$(/opt/homebrew/bin/brew shellenv zsh)"</div>
+      </div>
+      <div class="tip"><div class="tip-label">💡 Why?</div><p>Homebrew installs itself in /opt/homebrew but your terminal doesn't know to look there. These commands teach it.</p></div>
+    </div>
+  </div>
+
+  <!-- STEP 4 -->
+  <div class="step-card" id="step-4">
+    <div class="step-header">
+      <div class="step-number">4</div>
+      <div><div class="step-title">Install Python 3.11</div><div class="step-subtitle">The eval-protocol package requires Python 3.10+</div></div>
+    </div>
+    <div class="step-body">
+      <p>Your Mac ships with Python 3.9 which is too old. Install a newer version via Homebrew:</p>
+      <div class="cmd-block">
+        <div class="cmd-header"><span class="cmd-label">Terminal</span><button class="copy-btn" onclick="copyCmd(this)">Copy</button></div>
+        <div class="cmd-code">brew install python@3.11</div>
+      </div>
+      <p>Takes about 1–2 minutes to download and install.</p>
+      <div class="error-fix"><div class="error-label">🔧 Common Error</div><p>If you see "pip not found" or "pip3 not found" — that's fine, use <code>pip3.11</code> instead as shown in the next steps.</p></div>
+    </div>
+  </div>
+
+  <!-- STEP 5 -->
+  <div class="step-card" id="step-5">
+    <div class="step-header">
+      <div class="step-number">5</div>
+      <div><div class="step-title">Install & Set Up eval-protocol</div><div class="step-subtitle">Fireworks' CLI tool for running RFT jobs</div></div>
+    </div>
+    <div class="step-body">
+      <p>Install the package, clone the math quickstart repo, and write your API key:</p>
+      <div class="cmd-block">
+        <div class="cmd-header"><span class="cmd-label">Terminal — paste all at once</span><button class="copy-btn" onclick="copyCmd(this)">Copy</button></div>
+        <div class="cmd-code">pip3.11 install eval-protocol
+git clone https://github.com/eval-protocol/quickstart-gsm8k.git
+cd quickstart-gsm8k
+pip3.11 install -r requirements.txt
+echo "FIREWORKS_API_KEY=fw_YOUR_KEY_HERE" > .env</div>
+      </div>
+      <div class="tip"><div class="tip-label">🔑 API Key</div><p>Replace <strong>fw_YOUR_KEY_HERE</strong> with your actual key from <a href="https://fireworks.ai/account/api-keys" style="color:#ff6b35">fireworks.ai/account/api-keys</a>. Keys start with <code>fw_</code>.</p></div>
+    </div>
+  </div>
+
+  <!-- STEP 6 -->
+  <div class="step-card" id="step-6">
+    <div class="step-header">
+      <div class="step-number">6</div>
+      <div><div class="step-title">Fix the argparse Bug</div><div class="step-subtitle">A one-time patch for a bug in eval-protocol</div></div>
+    </div>
+    <div class="step-body">
+      <p>The current version of eval-protocol has a bug where two CLI arguments share the same name. Run this patch to fix it:</p>
+      <div class="cmd-block">
+        <div class="cmd-header"><span class="cmd-label">Terminal — paste entire block</span><button class="copy-btn" onclick="copyCmd(this)">Copy</button></div>
+        <div class="cmd-code">python3.11 - &lt;&lt;'EOF'
+import pathlib
+
+f = pathlib.Path("/opt/homebrew/lib/python3.11/site-packages/eval_protocol/cli_commands/utils.py")
+src = f.read_text()
+
+old = """    if unwrap_union(hint) is bool:
+        parser.add_argument(*flags, action="store_true", help=help_text)
+        return
+    parser.add_argument(
+        *flags,
+        type=argparse_type_from_hint(hint),
+        help=help_text,
+        metavar="",
+    )"""
+
+new = """    if unwrap_union(hint) is bool:
+        try:
+            parser.add_argument(*flags, action="store_true", help=help_text)
+        except Exception:
+            pass
+        return
+    try:
+        parser.add_argument(
+            *flags,
+            type=argparse_type_from_hint(hint),
+            help=help_text,
+            metavar="",
+        )
+    except Exception:
+        pass"""
+
+if old in src:
+    f.write_text(src.replace(old, new))
+    print("Patched successfully!")
+else:
+    print("Pattern not found - no change made")
+EOF</div>
+      </div>
+      <div class="success"><div class="success-label">✅ Expected output</div><p>You should see: <strong>Patched successfully!</strong></p></div>
+    </div>
+  </div>
+
+  <!-- STEP 7 -->
+  <div class="step-card" id="step-7">
+    <div class="step-header">
+      <div class="step-number">7</div>
+      <div><div class="step-title">Run the Evaluator Test</div><div class="step-subtitle">Tests locally and registers your dataset with Fireworks</div></div>
+    </div>
+    <div class="step-body">
+      <p>This command runs the math evaluator locally, uploads your dataset to Fireworks, and registers your API key as a secret:</p>
+      <div class="cmd-block">
+        <div class="cmd-header"><span class="cmd-label">Terminal</span><button class="copy-btn" onclick="copyCmd(this)">Copy</button></div>
+        <div class="cmd-code">eval-protocol test</div>
+      </div>
+      <p>During this step you'll be asked two interactive questions:</p>
+      <div class="checkbox-row" onclick="toggleCheck(this)"><input type="checkbox"><label><strong>Select this test?</strong> → Type <code>Y</code> and press Enter</label></div>
+      <div class="checkbox-row" onclick="toggleCheck(this)"><input type="checkbox"><label><strong>Select secrets to upload</strong> → Your API key is pre-selected, just press Enter</label></div>
+      <div class="success"><div class="success-label">✅ Success looks like</div><p>"1 passed" and "Created and uploaded dataset: evaluation-gsm8k-example-dataset-..."</p></div>
+    </div>
+  </div>
+
+  <!-- STEP 8 -->
+  <div class="step-card" id="step-8">
+    <div class="step-header">
+      <div class="step-number">8</div>
+      <div><div class="step-title">Launch the RFT Job</div><div class="step-subtitle">Submit training to Fireworks cloud</div></div>
+    </div>
+    <div class="step-body">
+      <p>Now kick off the actual reinforcement fine-tuning job. This trains Qwen3-0.6B on 1,000 GSM8K math problems for 3 epochs:</p>
+      <div class="cmd-block">
+        <div class="cmd-header"><span class="cmd-label">Terminal</span><button class="copy-btn" onclick="copyCmd(this)">Copy</button></div>
+        <div class="cmd-code">eval-protocol create rft --base-model accounts/fireworks/models/qwen3-0p6b --epochs 3</div>
+      </div>
+      <div class="error-fix"><div class="error-label">⚠️ Model not found?</div><p>Make sure the model ID is <code>qwen3-0p6b</code> (using "p" for the decimal point, not "0b6"). This was a common gotcha!</p></div>
+      <div class="tip"><div class="tip-label">💳 Cost</div><p>Qwen3-0.6B is free to tune on Fireworks — you'll see "Estimated Cost: No charge" in the dashboard.</p></div>
+    </div>
+  </div>
+
+  <!-- STEP 9 -->
+  <div class="step-card" id="step-9">
+    <div class="step-header">
+      <div class="step-number">9</div>
+      <div><div class="step-title">Add a Payment Method</div><div class="step-subtitle">Required even for free jobs</div></div>
+    </div>
+    <div class="step-body">
+      <p>Fireworks requires a payment method on file before it will create training jobs, even free ones. If you see this error:</p>
+      <div class="error-fix"><div class="error-label">Error you might see</div><p>"Error creating RFT job: Error code: 400 — payment method is required"</p></div>
+      <p>Go to <a href="https://app.fireworks.ai/settings/billing" style="color:#ff6b35">app.fireworks.ai/settings/billing</a> and add a card. Then re-run the command from Step 8.</p>
+      <div class="success"><div class="success-label">✅ Job created looks like</div><p>"✅ Created Reinforcement Fine-tuning Job: accounts/xpl/reinforcementFineTuningJobs/XXXXXXXX" with dashboard links printed below.</p></div>
+    </div>
+  </div>
+
+  <!-- STEP 10 -->
+  <div class="step-card" id="step-10">
+    <div class="step-header">
+      <div class="step-number">10</div>
+      <div><div class="step-title">Monitor Training</div><div class="step-subtitle">Watch your model learn math in real time</div></div>
+    </div>
+    <div class="step-body">
+      <p>Open the RFT Job dashboard link that was printed in your terminal. You'll see:</p>
+      <div class="checkbox-row" onclick="toggleCheck(this)"><input type="checkbox"><label><strong>State: Running</strong> — job is active</label></div>
+      <div class="checkbox-row" onclick="toggleCheck(this)"><input type="checkbox"><label><strong>Epoch 1/3</strong> with progress % — updates on manual refresh</label></div>
+      <div class="checkbox-row" onclick="toggleCheck(this)"><input type="checkbox"><label><strong>Score histogram</strong> — bimodal (0s and 1s) is normal for binary RL</label></div>
+      <div class="checkbox-row" onclick="toggleCheck(this)"><label><strong>Average Score climbing</strong> — from ~0.4 baseline toward 0.8+ after 3 epochs</label></div>
+      <div class="tip"><div class="tip-label">⏱️ Timing</div><p>The first epoch can take 40+ minutes to show progress. The dashboard doesn't auto-refresh — hit F5 every 10–15 minutes.</p></div>
+      <div class="finish-screen">
+        <div class="trophy">🎉</div>
+        <h2>You're training your first RL model!</h2>
+        <p>Qwen3-0.6B is learning math through reinforcement learning on Fireworks cloud.</p>
+        <a href="https://app.fireworks.ai/dashboard/fine-tuning" class="dashboard-link" target="_blank">Open Fireworks Dashboard →</a>
+      </div>
+    </div>
+  </div>
+
+</div><!-- end main -->
+
+<script>
+const TOTAL = 10;
+let current = 1;
+
+function renderNav() {
+  const nav = document.getElementById('stepsNav');
+  nav.innerHTML = '';
+  for (let i = 1; i <= TOTAL; i++) {
+    const d = document.createElement('div');
+    d.className = 'step-dot' + (i === current ? ' active' : '') + (i < current ? ' done' : '');
+    d.textContent = i < current ? '✓' : i;
+    d.onclick = () => goTo(i);
+    nav.appendChild(d);
+  }
+  document.getElementById('progressLabel').textContent = `Step ${current} of ${TOTAL}`;
+  document.getElementById('progressFill').style.width = (current / TOTAL * 100) + '%';
+}
+
+function goTo(n) {
+  document.getElementById('step-' + current).classList.remove('active');
+  current = n;
+  document.getElementById('step-' + current).classList.add('active');
+  renderNav();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  // Build nav footer buttons in each step
+  document.querySelectorAll('.step-card').forEach((card, idx) => {
+    const num = idx + 1;
+    const footer = document.createElement('div');
+    footer.className = 'nav-footer';
+    footer.innerHTML = `
+      <button class="btn btn-prev" onclick="goTo(${num - 1})" ${num === 1 ? 'disabled' : ''}>← Back</button>
+      <span class="step-counter">${num} / ${TOTAL}</span>
+      ${num < TOTAL ? `<button class="btn btn-next" onclick="goTo(${num + 1})">Next →</button>` : '<span></span>'}
+    `;
+    card.appendChild(footer);
+  });
+  renderNav();
+});
+
+function toggleCheck(row) {
+  const cb = row.querySelector('input');
+  cb.checked = !cb.checked;
+  row.classList.toggle('checked', cb.checked);
+}
+
+function copyCmd(btn) {
+  const code = btn.closest('.cmd-block').querySelector('.cmd-code').textContent;
+  navigator.clipboard.writeText(code).then(() => {
+    btn.textContent = 'Copied!';
+    btn.classList.add('copied');
+    setTimeout(() => { btn.textContent = 'Copy'; btn.classList.remove('copied'); }, 2000);
+  });
+}
+</script>
+</body>
+</html>
