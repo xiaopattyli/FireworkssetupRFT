@@ -44,11 +44,6 @@
   .msg.user .bubble { background: linear-gradient(135deg, #ff6b35, #ff3d7f); color: white; border-bottom-right-radius: 4px; }
   .msg.assistant .bubble { background: #141420; border: 1px solid #222230; color: #e0e0f0; border-bottom-left-radius: 4px; }
 
-  .think-block { background: #0a0a10; border: 1px solid #1e1e2e; border-left: 3px solid #a78bfa; border-radius: 8px; padding: 10px 14px; margin-bottom: 10px; font-size: 12px; color: #888; line-height: 1.6; }
-  .think-toggle { font-size: 11px; color: #a78bfa; cursor: pointer; margin-bottom: 8px; display: flex; align-items: center; gap: 4px; user-select: none; }
-  .think-toggle:hover { color: #c4b5fd; }
-  .think-content { display: none; }
-  .think-content.open { display: block; }
 
   .typing-indicator { display: flex; gap: 4px; align-items: center; padding: 14px 16px; }
   .typing-dot { width: 7px; height: 7px; border-radius: 50%; background: #666; animation: bounce 1.2s infinite; }
@@ -92,10 +87,8 @@
 </header>
 
 <div class="config-bar">
-  <label>API Key</label>
-  <input type="password" id="apiKeyInput" placeholder="fw_your_key_here">
   <label>Model</label>
-  <input type="text" id="modelInput" placeholder="accounts/xpl/deployments/dfywgadq">
+  <input type="text" id="modelInput" placeholder="accounts/xpl/deployments/dfywgadq" value="accounts/xpl/deployments/dfywgadq">
 </div>
 
 <div class="suggestions">
@@ -167,29 +160,8 @@ function addMessage(role, content) {
 
   if (role === 'assistant') {
     const thinkMatch = content.match(/<think>([\s\S]*?)<\/think>/i);
-    const mainText = stripMarkdown(content.replace(/<think>[\s\S]*?<\/think>/i, '').trim());
-
-    if (thinkMatch) {
-      const thinkBlock = document.createElement('div');
-      thinkBlock.className = 'think-block';
-      const toggle = document.createElement('div');
-      toggle.className = 'think-toggle';
-      toggle.innerHTML = '▶ Show reasoning';
-      const thinkContent = document.createElement('div');
-      thinkContent.className = 'think-content';
-      thinkContent.textContent = thinkMatch[1].trim();
-      toggle.onclick = () => {
-        const open = thinkContent.classList.toggle('open');
-        toggle.innerHTML = open ? '▼ Hide reasoning' : '▶ Show reasoning';
-      };
-      thinkBlock.appendChild(toggle);
-      thinkBlock.appendChild(thinkContent);
-      bubble.appendChild(thinkBlock);
-    }
-
-    const textNode = document.createElement('div');
-    textNode.textContent = mainText;
-    bubble.appendChild(textNode);
+    const text = thinkMatch ? thinkMatch[1].trim() : content.trim();
+    bubble.textContent = text;
   } else {
     bubble.textContent = content;
   }
@@ -241,12 +213,9 @@ async function sendMessage() {
   const text = input.value.trim();
   if (!text) return;
 
-  const apiKey = document.getElementById('apiKeyInput').value.trim();
+  const apiKey = 'fw_LZYbRvBG8hb2jCi4kh1ymb';
   const model = document.getElementById('modelInput').value.trim();
 
-  if (!apiKey || !apiKey.startsWith('fw_')) {
-    addError('Please enter your Fireworks API key (starts with fw_) in the config bar above.'); return;
-  }
   if (!model || !model.startsWith('accounts/')) {
     addError('Please enter your model deployment ID (e.g. accounts/xpl/deployments/dfywgadq) in the config bar above.'); return;
   }
