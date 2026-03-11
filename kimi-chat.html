@@ -82,7 +82,7 @@
   <div class="header-left">
     <span style="font-size:20px">🌙</span>
     <h1>Kimi Chat</h1>
-    <span class="model-badge">Kimi K2 Thinking · Fireworks AI</span>
+    <span class="model-badge">Kimi K2.5 · Fireworks AI</span>
   </div>
   <div>
     <span class="status-dot"></span>
@@ -92,7 +92,7 @@
 
 <div class="config-bar">
   <label>Model</label>
-  <input type="text" id="modelInput" placeholder="accounts/fireworks/models/kimi-k2-thinking" value="accounts/fireworks/models/kimi-k2-thinking">
+  <input type="text" id="modelInput" placeholder="accounts/fireworks/models/kimi-k2p5" value="accounts/fireworks/models/kimi-k2p5" style="width:420px">
 </div>
 
 <div class="suggestions">
@@ -159,9 +159,7 @@ function addMessage(role, content) {
   bubble.className = 'bubble';
 
   if (role === 'assistant') {
-    const thinkMatch = content.match(/<think>([\s\S]*?)<\/think>/i);
-    const reasoning = thinkMatch ? thinkMatch[1].trim() : null;
-    const mainText = content.replace(/<think>[\s\S]*?<\/think>/i, '').trim();
+    const { text: mainText, reasoning } = content;
 
     if (reasoning) {
       const thinkBlock = document.createElement('div');
@@ -187,7 +185,7 @@ function addMessage(role, content) {
       bubble.appendChild(textNode);
     }
   } else {
-    bubble.textContent = content;
+    bubble.textContent = typeof content === 'string' ? content : content.text;
   }
 
   msg.appendChild(avatar);
@@ -258,7 +256,7 @@ async function sendMessage() {
       headers: { 'Authorization': `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({
         model: model,
-        max_tokens: 16384,
+        max_tokens: 4096,
         messages: [
           { role: 'system', content: 'You are Kimi, a helpful and thoughtful AI assistant. Answer clearly and concisely. Do not use markdown formatting, asterisks, or bullet points — write in plain prose.' },
           ...messages
@@ -270,11 +268,12 @@ async function sendMessage() {
     removeTyping();
 
     if (!res.ok) {
-      addError(`API error ${res.status}: ${data.message || JSON.stringify(data)}`);
+      addError(`API error ${res.status}: ${data.error?.message || JSON.stringify(data)}`);
     } else {
-      const reply = data.choices[0].message.content;
+      const msg = data.choices[0].message;
+      const reply = { text: msg.content || '', reasoning: msg.reasoning_content || null };
       addMessage('assistant', reply);
-      messages.push({ role: 'assistant', content: reply });
+      messages.push({ role: 'assistant', content: msg.content || '' });
     }
   } catch (err) {
     removeTyping();
