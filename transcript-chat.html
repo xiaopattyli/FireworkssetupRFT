@@ -1,0 +1,661 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Transcript Chat — Fireworks AI</title>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-primary: #0a0a0f;
+      --bg-secondary: #12121a;
+      --bg-tertiary: #1a1a26;
+      --bg-input: #15151f;
+      --border: #2a2a3a;
+      --border-focus: #f97316;
+      --text-primary: #e8e8ef;
+      --text-secondary: #8888a0;
+      --text-muted: #55556a;
+      --accent: #f97316;
+      --accent-dim: rgba(249, 115, 22, 0.12);
+      --user-bubble: #1e1e30;
+      --ai-bubble: transparent;
+      --success: #22c55e;
+      --danger: #ef4444;
+      --radius: 12px;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'DM Sans', -apple-system, sans-serif;
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    /* ── Header ─────────────────────────────────────── */
+    header {
+      background: var(--bg-secondary);
+      border-bottom: 1px solid var(--border);
+      padding: 0 24px;
+      height: 56px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-shrink: 0;
+    }
+
+    .header-left { display: flex; align-items: center; gap: 12px; }
+    .header-left h1 {
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--text-primary);
+      letter-spacing: -0.01em;
+    }
+
+    .logo-mark {
+      width: 28px; height: 28px;
+      background: linear-gradient(135deg, #f97316 0%, #fb923c 100%);
+      border-radius: 7px;
+      display: flex; align-items: center; justify-content: center;
+      font-family: 'JetBrains Mono', monospace;
+      font-weight: 700; font-size: 13px; color: #000;
+    }
+
+    .model-badge {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      background: var(--accent-dim);
+      color: var(--accent);
+      border: 1px solid rgba(249,115,22,0.2);
+      padding: 3px 10px;
+      border-radius: 20px;
+    }
+
+    .transcript-status {
+      display: flex; align-items: center; gap: 6px;
+      font-size: 12px; color: var(--text-muted);
+    }
+    .status-dot {
+      width: 7px; height: 7px; border-radius: 50%;
+      background: var(--text-muted);
+    }
+    .status-dot.loaded { background: var(--success); box-shadow: 0 0 6px rgba(34,197,94,0.4); }
+
+    /* ── Config bar ─────────────────────────────────── */
+    .config-bar {
+      background: var(--bg-secondary);
+      border-bottom: 1px solid var(--border);
+      padding: 10px 24px;
+      display: flex; align-items: center; gap: 12px;
+      flex-shrink: 0;
+      flex-wrap: wrap;
+    }
+
+    .config-bar label {
+      font-size: 10px; color: var(--text-muted);
+      text-transform: uppercase; letter-spacing: 1.5px; font-weight: 600;
+    }
+
+    .config-bar select, .config-bar input[type="text"], .config-bar input[type="password"] {
+      background: var(--bg-tertiary);
+      border: 1px solid var(--border);
+      color: var(--text-primary);
+      padding: 6px 12px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-family: 'JetBrains Mono', monospace;
+      outline: none;
+    }
+    .config-bar select:focus, .config-bar input:focus {
+      border-color: var(--border-focus);
+    }
+
+    #apiKeyInput { width: 260px; }
+    #modelSelect { width: 280px; }
+
+    .upload-zone {
+      position: relative;
+      display: flex; align-items: center; gap: 8px;
+    }
+
+    .upload-btn {
+      background: var(--bg-tertiary);
+      border: 1px dashed var(--border);
+      color: var(--text-secondary);
+      padding: 6px 14px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-family: 'DM Sans', sans-serif;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .upload-btn:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+      background: var(--accent-dim);
+    }
+
+    .file-name {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      color: var(--success);
+      max-width: 200px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    /* ── Chat area ──────────────────────────────────── */
+    .chat-container {
+      flex: 1;
+      overflow-y: auto;
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .chat-container::-webkit-scrollbar { width: 6px; }
+    .chat-container::-webkit-scrollbar-track { background: transparent; }
+    .chat-container::-webkit-scrollbar-thumb {
+      background: var(--border);
+      border-radius: 3px;
+    }
+
+    .welcome {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 16px;
+      text-align: center;
+      color: var(--text-muted);
+    }
+
+    .welcome-icon {
+      width: 64px; height: 64px;
+      background: var(--accent-dim);
+      border-radius: 16px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 28px;
+    }
+
+    .welcome h2 {
+      font-size: 20px; font-weight: 600;
+      color: var(--text-secondary);
+    }
+
+    .welcome p {
+      font-size: 14px;
+      max-width: 400px;
+      line-height: 1.6;
+    }
+
+    .msg { display: flex; gap: 12px; max-width: 800px; width: 100%; margin: 0 auto; }
+    .msg.user { justify-content: flex-end; }
+    .msg.assistant { justify-content: flex-start; }
+
+    .msg-bubble {
+      padding: 12px 16px;
+      border-radius: var(--radius);
+      font-size: 14px;
+      line-height: 1.65;
+      max-width: 85%;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+
+    .msg.user .msg-bubble {
+      background: var(--user-bubble);
+      border: 1px solid var(--border);
+      border-bottom-right-radius: 4px;
+    }
+
+    .msg.assistant .msg-bubble {
+      background: var(--ai-bubble);
+      color: var(--text-primary);
+      border-bottom-left-radius: 4px;
+    }
+
+    .msg-label {
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 1.2px;
+      color: var(--text-muted);
+      margin-bottom: 4px;
+      font-weight: 600;
+    }
+
+    .msg.assistant .msg-label { color: var(--accent); }
+
+    .typing-indicator span {
+      display: inline-block;
+      width: 6px; height: 6px;
+      background: var(--text-muted);
+      border-radius: 50%;
+      margin-right: 4px;
+      animation: blink 1.4s infinite both;
+    }
+    .typing-indicator span:nth-child(2) { animation-delay: 0.2s; }
+    .typing-indicator span:nth-child(3) { animation-delay: 0.4s; }
+    @keyframes blink {
+      0%, 80%, 100% { opacity: 0.3; }
+      40% { opacity: 1; }
+    }
+
+    /* ── Input area ─────────────────────────────────── */
+    .input-area {
+      background: var(--bg-secondary);
+      border-top: 1px solid var(--border);
+      padding: 16px 24px;
+      flex-shrink: 0;
+    }
+
+    .input-row {
+      max-width: 800px;
+      margin: 0 auto;
+      display: flex;
+      gap: 10px;
+      align-items: flex-end;
+    }
+
+    #chatInput {
+      flex: 1;
+      background: var(--bg-input);
+      border: 1px solid var(--border);
+      color: var(--text-primary);
+      padding: 12px 16px;
+      border-radius: var(--radius);
+      font-size: 14px;
+      font-family: 'DM Sans', sans-serif;
+      outline: none;
+      resize: none;
+      min-height: 46px;
+      max-height: 160px;
+      line-height: 1.5;
+    }
+    #chatInput:focus { border-color: var(--border-focus); }
+    #chatInput::placeholder { color: var(--text-muted); }
+
+    .send-btn {
+      width: 46px; height: 46px;
+      background: var(--accent);
+      border: none;
+      border-radius: var(--radius);
+      color: #000;
+      font-size: 18px;
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      transition: all 0.15s;
+      flex-shrink: 0;
+    }
+    .send-btn:hover { background: #fb923c; transform: translateY(-1px); }
+    .send-btn:disabled { opacity: 0.3; cursor: not-allowed; transform: none; }
+
+    /* ── Token count footer ─────────────────────────── */
+    .token-info {
+      max-width: 800px;
+      margin: 6px auto 0;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 10px;
+      color: var(--text-muted);
+      display: flex;
+      gap: 16px;
+    }
+
+    /* ── Error toast ────────────────────────────────── */
+    .error-toast {
+      position: fixed;
+      top: 20px; right: 20px;
+      background: rgba(239,68,68,0.15);
+      border: 1px solid var(--danger);
+      color: var(--danger);
+      padding: 12px 20px;
+      border-radius: 8px;
+      font-size: 13px;
+      max-width: 400px;
+      z-index: 100;
+      animation: slideIn 0.3s ease;
+    }
+    @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+
+    /* ── Responsive ─────────────────────────────────── */
+    @media (max-width: 640px) {
+      .config-bar { padding: 10px 12px; }
+      #apiKeyInput { width: 160px; }
+      #modelSelect { width: 200px; }
+      .chat-container { padding: 16px 12px; }
+      .input-area { padding: 12px; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Header -->
+  <header>
+    <div class="header-left">
+      <div class="logo-mark">F</div>
+      <h1>Transcript Chat</h1>
+      <span class="model-badge" id="modelBadge">kimi-k2.5</span>
+    </div>
+    <div class="transcript-status">
+      <div class="status-dot" id="statusDot"></div>
+      <span id="statusText">No transcript loaded</span>
+    </div>
+  </header>
+
+  <!-- Config bar -->
+  <div class="config-bar">
+    <div>
+      <label>API Key</label><br>
+      <input type="password" id="apiKeyInput" placeholder="fw_..." spellcheck="false">
+    </div>
+    <div>
+      <label>Model</label><br>
+      <select id="modelSelect">
+        <option value="accounts/fireworks/models/kimi-k2p5">Kimi K2.5</option>
+        <option value="accounts/fireworks/models/kimi-k2-thinking">Kimi K2 Thinking</option>
+        <option value="accounts/fireworks/models/deepseek-v3p1">DeepSeek V3</option>
+        <option value="accounts/fireworks/models/llama4-maverick-instruct-basic">Llama 4 Maverick</option>
+        <option value="accounts/fireworks/models/qwen3-235b-a22b">Qwen 3 235B</option>
+      </select>
+    </div>
+    <div class="upload-zone">
+      <div>
+        <label>Transcript</label><br>
+        <button class="upload-btn" onclick="document.getElementById('fileInput').click()">
+          📄 Load JSON transcript
+        </button>
+        <input type="file" id="fileInput" accept=".json,.txt" hidden>
+      </div>
+      <span class="file-name" id="fileName"></span>
+    </div>
+  </div>
+
+  <!-- Chat -->
+  <div class="chat-container" id="chatContainer">
+    <div class="welcome" id="welcomeScreen">
+      <div class="welcome-icon">🎙️</div>
+      <h2>Chat with your transcript</h2>
+      <p>Load a transcript JSON file above, then ask questions about it. The full transcript is sent as context with every message.</p>
+    </div>
+  </div>
+
+  <!-- Input -->
+  <div class="input-area">
+    <div class="input-row">
+      <textarea id="chatInput" rows="1" placeholder="Ask about your transcript..." disabled></textarea>
+      <button class="send-btn" id="sendBtn" onclick="sendMessage()" disabled>▶</button>
+    </div>
+    <div class="token-info">
+      <span id="contextInfo"></span>
+    </div>
+  </div>
+
+  <script>
+    // ── State ──────────────────────────────────────────
+    let transcriptText = '';
+    let transcriptTitle = '';
+    let conversationHistory = [];
+    let isStreaming = false;
+
+    // ── DOM refs ──────────────────────────────────────
+    const chatContainer = document.getElementById('chatContainer');
+    const chatInput = document.getElementById('chatInput');
+    const sendBtn = document.getElementById('sendBtn');
+    const fileInput = document.getElementById('fileInput');
+    const apiKeyInput = document.getElementById('apiKeyInput');
+    const modelSelect = document.getElementById('modelSelect');
+    const statusDot = document.getElementById('statusDot');
+    const statusText = document.getElementById('statusText');
+    const fileName = document.getElementById('fileName');
+    const contextInfo = document.getElementById('contextInfo');
+    const welcomeScreen = document.getElementById('welcomeScreen');
+    const modelBadge = document.getElementById('modelBadge');
+
+    // ── Load saved API key ────────────────────────────
+    const savedKey = localStorage.getItem('fw_api_key');
+    if (savedKey) apiKeyInput.value = savedKey;
+
+    apiKeyInput.addEventListener('change', () => {
+      localStorage.setItem('fw_api_key', apiKeyInput.value);
+    });
+
+    modelSelect.addEventListener('change', () => {
+      const name = modelSelect.options[modelSelect.selectedIndex].text;
+      modelBadge.textContent = name;
+    });
+
+    // ── File upload ───────────────────────────────────
+    fileInput.addEventListener('change', async (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      try {
+        const raw = await file.text();
+
+        // Try parsing as JSON first
+        try {
+          const data = JSON.parse(raw);
+
+          // Handle Fireworks Whisper verbose_json format
+          if (data.text) {
+            transcriptText = data.text;
+            transcriptTitle = data.title || file.name;
+          }
+          // Handle array of segments
+          else if (Array.isArray(data.segments)) {
+            transcriptText = data.segments.map(s => s.text).join(' ');
+            transcriptTitle = file.name;
+          }
+          // Handle plain object with content field
+          else if (data.content) {
+            transcriptText = data.content;
+            transcriptTitle = data.title || file.name;
+          }
+          else {
+            transcriptText = JSON.stringify(data, null, 2);
+            transcriptTitle = file.name;
+          }
+        } catch {
+          // Plain text file
+          transcriptText = raw;
+          transcriptTitle = file.name;
+        }
+
+        // Update UI
+        statusDot.classList.add('loaded');
+        statusText.textContent = `${transcriptTitle}`;
+        fileName.textContent = file.name;
+
+        const approxTokens = Math.ceil(transcriptText.length / 4);
+        contextInfo.textContent = `Context: ~${approxTokens.toLocaleString()} tokens from transcript`;
+
+        chatInput.disabled = false;
+        sendBtn.disabled = false;
+        chatInput.placeholder = `Ask about "${transcriptTitle}"...`;
+        chatInput.focus();
+
+        // Reset conversation
+        conversationHistory = [];
+        if (welcomeScreen) welcomeScreen.remove();
+
+        // Show confirmation
+        addMessage('assistant', `Loaded **${transcriptTitle}** (${transcriptText.length.toLocaleString()} characters). Ask me anything about it.`);
+
+      } catch (err) {
+        showError('Failed to read file: ' + err.message);
+      }
+    });
+
+    // ── Send message ──────────────────────────────────
+    async function sendMessage() {
+      const apiKey = apiKeyInput.value.trim();
+      if (!apiKey) { showError('Enter your Fireworks API key above.'); return; }
+      if (!transcriptText) { showError('Load a transcript file first.'); return; }
+
+      const userText = chatInput.value.trim();
+      if (!userText || isStreaming) return;
+
+      // Show user message
+      addMessage('user', userText);
+      chatInput.value = '';
+      chatInput.style.height = 'auto';
+
+      // Build messages array
+      const systemPrompt = `You are an expert assistant for analyzing audio transcripts. The user has loaded a transcript and will ask questions about it.
+
+Here is the full transcript:
+---
+${transcriptText}
+---
+
+Instructions:
+- Answer questions based on the transcript content above.
+- Quote relevant parts when helpful, but keep answers concise.
+- If something isn't covered in the transcript, say so clearly.
+- When the user asks for a summary, structure it with key themes.`;
+
+      conversationHistory.push({ role: 'user', content: userText });
+
+      const messages = [
+        { role: 'system', content: systemPrompt },
+        ...conversationHistory
+      ];
+
+      // Stream response
+      isStreaming = true;
+      sendBtn.disabled = true;
+
+      const aiMsgEl = addMessage('assistant', '', true);
+
+      try {
+        const response = await fetch('https://api.fireworks.ai/inference/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${apiKey}`
+          },
+          body: JSON.stringify({
+            model: modelSelect.value,
+            messages: messages,
+            stream: true,
+            max_tokens: 4096,
+            temperature: 0.4
+          })
+        });
+
+        if (!response.ok) {
+          const errData = await response.json().catch(() => ({}));
+          throw new Error(errData.error?.message || `HTTP ${response.status}`);
+        }
+
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+        let fullText = '';
+        let buffer = '';
+
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+
+          buffer += decoder.decode(value, { stream: true });
+          const lines = buffer.split('\n');
+          buffer = lines.pop() || '';
+
+          for (const line of lines) {
+            const trimmed = line.trim();
+            if (!trimmed.startsWith('data: ')) continue;
+            const payload = trimmed.slice(6);
+            if (payload === '[DONE]') continue;
+
+            try {
+              const chunk = JSON.parse(payload);
+              const delta = chunk.choices?.[0]?.delta?.content;
+              if (delta) {
+                fullText += delta;
+                updateMessage(aiMsgEl, fullText);
+              }
+            } catch {}
+          }
+        }
+
+        conversationHistory.push({ role: 'assistant', content: fullText });
+
+      } catch (err) {
+        updateMessage(aiMsgEl, `Error: ${err.message}`);
+        aiMsgEl.querySelector('.msg-bubble').style.color = 'var(--danger)';
+      } finally {
+        isStreaming = false;
+        sendBtn.disabled = false;
+        chatInput.focus();
+      }
+    }
+
+    // ── UI helpers ────────────────────────────────────
+    function addMessage(role, text, isStreaming = false) {
+      if (welcomeScreen && welcomeScreen.parentNode) welcomeScreen.remove();
+
+      const wrapper = document.createElement('div');
+      wrapper.className = `msg ${role}`;
+
+      const inner = document.createElement('div');
+
+      const label = document.createElement('div');
+      label.className = 'msg-label';
+      label.textContent = role === 'user' ? 'You' : modelSelect.options[modelSelect.selectedIndex].text;
+
+      const bubble = document.createElement('div');
+      bubble.className = 'msg-bubble';
+
+      if (isStreaming && !text) {
+        bubble.innerHTML = '<div class="typing-indicator"><span></span><span></span><span></span></div>';
+      } else {
+        bubble.textContent = text;
+      }
+
+      inner.appendChild(label);
+      inner.appendChild(bubble);
+      wrapper.appendChild(inner);
+      chatContainer.appendChild(wrapper);
+      chatContainer.scrollTop = chatContainer.scrollHeight;
+
+      return wrapper;
+    }
+
+    function updateMessage(el, text) {
+      const bubble = el.querySelector('.msg-bubble');
+      bubble.textContent = text;
+      chatContainer.scrollTop = chatContainer.scrollHeight;
+    }
+
+    function showError(msg) {
+      const toast = document.createElement('div');
+      toast.className = 'error-toast';
+      toast.textContent = msg;
+      document.body.appendChild(toast);
+      setTimeout(() => toast.remove(), 4000);
+    }
+
+    // ── Auto-resize textarea ─────────────────────────
+    chatInput.addEventListener('input', () => {
+      chatInput.style.height = 'auto';
+      chatInput.style.height = Math.min(chatInput.scrollHeight, 160) + 'px';
+    });
+
+    // ── Enter to send ────────────────────────────────
+    chatInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        sendMessage();
+      }
+    });
+  </script>
+</body>
+</html>
